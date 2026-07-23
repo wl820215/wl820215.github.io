@@ -1,12 +1,171 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简易留言板</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        #message-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        #name, #message {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #message {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #message-list {
+            list-style: none;
+            padding: 0;
+        }
+        .message-item {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #4CAF50;
+        }
+        .message-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .message-time {
+            color: #888;
+            font-size: 0.8em;
+            margin-top: 5px;
+            text-align: right;
+        }
+        .delete-btn {
+            color: #ff4444;
+            cursor: pointer;
+            float: right;
+            font-size: 0.8em;
+        }
+    </style>
 </head>
 <body>
+    <h1>留言板</h1>
+    <form id="message-form">
+        <input type="text" id="name" placeholder="您的姓名" required>
+        <textarea id="message" placeholder="留言内容" required></textarea>
+        <button type="submit">提交留言</button>
+    </form>
+    <ul id="message-list"></ul>
 
-<script type="text/javascript" src="vipplayer.js"></script>
+    <script>
+        // 初始化留言列表
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMessages();
+        });
 
+        // 表单提交处理
+        document.getElementById('message-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value.trim();
+            const message = document.getElementById('message').value.trim();
+            
+            if (name && message) {
+                saveMessage(name, message);
+                document.getElementById('message-form').reset();
+            }
+        });
+
+        // 保存留言到localStorage
+        function saveMessage(name, message) {
+            const messages = getMessages();
+            const newMessage = {
+                id: Date.now(),
+                name: name,
+                message: message,
+                time: new Date().toLocaleString()
+            };
+            messages.unshift(newMessage); // 新留言放在最前面
+            localStorage.setItem('messages', JSON.stringify(messages));
+            renderMessages();
+        }
+
+        // 从localStorage获取留言
+        function getMessages() {
+            const saved = localStorage.getItem('messages');
+            return saved ? JSON.parse(saved) : [];
+        }
+
+        // 加载并显示留言
+        function loadMessages() {
+            renderMessages();
+        }
+
+        // 渲染留言列表
+        function renderMessages() {
+            const messages = getMessages();
+            const messageList = document.getElementById('message-list');
+            messageList.innerHTML = '';
+            
+            messages.forEach(msg => {
+                const li = document.createElement('li');
+                li.className = 'message-item';
+                li.innerHTML = `
+                    <div class="message-name">${escapeHtml(msg.name)}</div>
+                    <div class="message-content">${escapeHtml(msg.message)}</div>
+                    <div class="message-time">${msg.time} 
+                        <span class="delete-btn" data-id="${msg.id}">删除</span>
+                    </div>
+                `;
+                messageList.appendChild(li);
+            });
+
+            // 添加删除按钮事件
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    deleteMessage(parseInt(this.getAttribute('data-id')));
+                });
+            });
+        }
+
+        // 删除留言
+        function deleteMessage(id) {
+            const messages = getMessages().filter(msg => msg.id !== id);
+            localStorage.setItem('messages', JSON.stringify(messages));
+            renderMessages();
+        }
+
+        // 防止XSS攻击
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
 </body>
 </html>
